@@ -31,7 +31,7 @@ void CountersIncrementKafkaConsumer::processOne(const RdKafka::Message& msg, voi
   auto counts = static_cast<std::unordered_map<std::string, int64_t>*>(opaque);
   Counter record;
   consumerHelper_->decodeAvroPayload(msg.payload(), msg.len(), &record);
-  std::string key(reinterpret_cast<char*>(record.key.data()), record.key.size());
+  std::string key(reinterpret_cast<const char*>(record.key.data()), record.key.size());
   key.append(1, 'H');  // placeholder for suffix
   for (char suffix : kTimespanSuffixes) {
     key[record.key.size()] = suffix;

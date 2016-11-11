@@ -57,7 +57,7 @@ void CountersDecrementKafkaStoreConsumer::processOne(int64_t offset, const infra
   consumerHelper_->decodeAvroPayload(valBytes.data(), valBytes.size(), &record);
   if (nowMs() - msg.timestamp >= timeDelayMs_) {
     // this message is overdue, apply the count
-    std::string key(reinterpret_cast<char*>(record.key.data()), record.key.size());
+    std::string key(reinterpret_cast<const char*>(record.key.data()), record.key.size());
     key.append(1, keySuffix_);
     buf->counts[key] -= record.by;
     buf->nextProcessOffset = offset + 1;
