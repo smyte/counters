@@ -71,7 +71,6 @@ cc_library(
         "//external:glog",
         "//external:librdkafka",
         "//infra/kafka:consumer",
-        "//infra/kafka:consumer_helper",
     ],
     copts = [
         "-std=c++11",
@@ -93,7 +92,9 @@ cc_library(
         "//external:folly",
         "//external:glog",
         "//infra/kafka/store:consumer",
-        "//infra/kafka:consumer_helper",
         "//pipeline:kafka_consumer_config",
+    ],
+    copts = [
+        "-std=c++11",
     ],
 )

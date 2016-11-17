@@ -54,7 +54,7 @@ void CountersDecrementKafkaStoreConsumer::processOne(int64_t offset, const infra
 
   auto valBytes = msg.value.get_bytes();
   Counter record;
-  consumerHelper_->decodeAvroPayload(valBytes.data(), valBytes.size(), &record);
+  consumerHelper()->decodeAvroPayload(valBytes.data(), valBytes.size(), &record);
   if (nowMs() - msg.timestamp >= timeDelayMs_) {
     // this message is overdue, apply the count
     std::string key(reinterpret_cast<const char*>(record.key.data()), record.key.size());
@@ -76,7 +76,7 @@ void CountersDecrementKafkaStoreConsumer::commitCounts(const CountersDecrementKa
     writeBatch.Merge(entry.first, rocksdb::Slice(value.data(), sizeof(int64_t)));
   }
   int64_t fileOffset = buf.nextProcessOffset < nextFileOffset() ? currentFileOffset() : nextFileOffset();
-  CHECK(consumerHelper_->commitNextProcessKafkaAndFileOffsets(offsetKey_, buf.nextProcessOffset, fileOffset,
+  CHECK(consumerHelper()->commitNextProcessKafkaAndFileOffsets(offsetKey(), buf.nextProcessOffset, fileOffset,
                                                               &writeBatch));
   // Also commit to kafka brokers only for metrics and reporting, so failure is okay
   if (!commitAsync()) {

@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "boost/algorithm/string/predicate.hpp"
-#include "infra/kafka/ConsumerHelper.h"
 #include "infra/kafka/store/Consumer.h"
 #include "infra/kafka/store/KafkaStoreMessageRecord.hh"
 
@@ -27,10 +26,8 @@ class CountersDecrementKafkaStoreConsumer : public infra::kafka::store::Consumer
                                       std::shared_ptr<infra::kafka::ConsumerHelper> consumerHelper,
                                       std::shared_ptr<platform::gcloud::GoogleCloudStorage> gcs)
       : infra::kafka::store::Consumer(brokerList, objectStoreBucketName, objectStoreObjectNamePrefix, topic, partition,
-                                      groupId, gcs),
-        offsetKey_(offsetKey),
-        mode_(mode),
-        consumerHelper_(consumerHelper) {
+                                      groupId, offsetKey, consumerHelper, gcs),
+        mode_(mode) {
     const auto it = kTimespanMap.find(mode);
     CHECK(it != kTimespanMap.end()) << "Unknown mode: " << mode;
     timeDelayMs_ = it->second.timeDelayMs;
@@ -42,10 +39,6 @@ class CountersDecrementKafkaStoreConsumer : public infra::kafka::store::Consumer
 
   // Process one message from kafka store
   void processOne(int64_t offset, const infra::kafka::store::KafkaStoreMessage& msg, void* opaque) override;
-
-  bool loadCommittedKafkaAndFileOffsets(int64_t* kafkaOffset, int64_t* fileOffset) override {
-    return consumerHelper_->loadCommittedKafkaAndFileOffsetsFromDb(offsetKey_, kafkaOffset, fileOffset);
-  }
 
  private:
   struct Timespan {
@@ -74,9 +67,7 @@ class CountersDecrementKafkaStoreConsumer : public infra::kafka::store::Consumer
   // Delay timeMs for up to delayMs. Return true when delay was incurred successfully and false if interrupted.
   bool delay(int64_t delayMs, int64_t timeMs);
 
-  const std::string offsetKey_;
   const std::string mode_;
-  std::shared_ptr<infra::kafka::ConsumerHelper> consumerHelper_;
   int64_t timeDelayMs_;
   char keySuffix_;
 };
