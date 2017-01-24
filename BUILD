@@ -70,6 +70,7 @@ cc_library(
         "//external:folly",
         "//external:glog",
         "//external:librdkafka",
+        "//infra:avro_helper",
         "//infra/kafka:consumer",
     ],
     copts = [
@@ -87,10 +88,10 @@ cc_library(
         "CountersDecrementKafkaStoreConsumer.h",
     ],
     deps = [
-        "//external:avro",
         "//external:boost",
         "//external:folly",
         "//external:glog",
+        "//infra:avro_helper",
         "//infra/kafka/store:consumer",
         "//pipeline:kafka_consumer_config",
     ],

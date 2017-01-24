@@ -9,6 +9,7 @@
 #include "counters/CounterRecord.hh"
 #include "folly/Format.h"
 #include "glog/logging.h"
+#include "infra/AvroHelper.h"
 
 namespace counters {
 
@@ -54,7 +55,7 @@ void CountersDecrementKafkaStoreConsumer::processOne(int64_t offset, const infra
 
   auto valBytes = msg.value.get_bytes();
   Counter record;
-  consumerHelper()->decodeAvroPayload(valBytes.data(), valBytes.size(), &record);
+  infra::AvroHelper::decode(valBytes.data(), valBytes.size(), &record);
   if (nowMs() - msg.timestamp >= timeDelayMs_) {
     // this message is overdue, apply the count
     std::string key(reinterpret_cast<const char*>(record.key.data()), record.key.size());

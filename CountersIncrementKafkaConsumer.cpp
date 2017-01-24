@@ -6,6 +6,7 @@
 #include "boost/endian/buffers.hpp"
 #include "counters/CounterRecord.hh"
 #include "folly/Format.h"
+#include "infra/AvroHelper.h"
 #include "rocksdb/write_batch.h"
 
 namespace counters {
@@ -30,7 +31,7 @@ void CountersIncrementKafkaConsumer::processBatch(int timeoutMs) {
 void CountersIncrementKafkaConsumer::processOne(const RdKafka::Message& msg, void* opaque) {
   auto counts = static_cast<std::unordered_map<std::string, int64_t>*>(opaque);
   Counter record;
-  consumerHelper()->decodeAvroPayload(msg.payload(), msg.len(), &record);
+  infra::AvroHelper::decode(msg.payload(), msg.len(), &record);
   std::string key(reinterpret_cast<const char*>(record.key.data()), record.key.size());
   key.append(1, 'H');  // placeholder for suffix
   for (char suffix : kTimespanSuffixes) {
