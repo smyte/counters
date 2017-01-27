@@ -17,9 +17,9 @@ class CountersIncrementKafkaConsumer : public infra::kafka::Consumer {
   }
 
   CountersIncrementKafkaConsumer(const std::string& brokerList, const std::string& topicStr, int partition,
-                                 const std::string& groupId, const std::string& offsetKey,
+                                 const std::string& groupId, const std::string& offsetKey, bool lowLatency,
                                  std::shared_ptr<infra::kafka::ConsumerHelper> consumerHelper)
-      : infra::kafka::Consumer(brokerList, topicStr, partition, groupId, offsetKey, consumerHelper),
+      : infra::kafka::Consumer(brokerList, topicStr, partition, groupId, offsetKey, lowLatency, consumerHelper),
         lastProcessedOffset_(RdKafka::Topic::OFFSET_INVALID) {}
 
   virtual ~CountersIncrementKafkaConsumer() {}

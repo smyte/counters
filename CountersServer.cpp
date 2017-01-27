@@ -20,9 +20,9 @@ static pipeline::RedisPipelineBootstrap::Config config{
            [](const std::string& brokerList, const pipeline::KafkaConsumerConfig& consumerConfig,
               const std::string& offsetKey,
               pipeline::RedisPipelineBootstrap* bootstrap) -> std::shared_ptr<infra::kafka::AbstractConsumer> {
-             return std::make_shared<CountersIncrementKafkaConsumer>(brokerList, consumerConfig.topic,
-                                                                     consumerConfig.partition, consumerConfig.groupId,
-                                                                     offsetKey, bootstrap->getKafkaConsumerHelper());
+             return std::make_shared<CountersIncrementKafkaConsumer>(
+                 brokerList, consumerConfig.topic, consumerConfig.partition, consumerConfig.groupId, offsetKey,
+                 consumerConfig.lowLatency, bootstrap->getKafkaConsumerHelper());
            },
        },
        {
