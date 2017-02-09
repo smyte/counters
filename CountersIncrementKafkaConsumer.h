@@ -35,8 +35,6 @@ class CountersIncrementKafkaConsumer : public infra::kafka::Consumer {
   void processOne(const RdKafka::Message& msg, void* opaque) override;
 
  private:
-  static constexpr char kTimespanSuffixes[] = { 'H', 'D', 'W', 'M', 'T' };
-
   int64_t lastProcessedOffset_;
 };
 

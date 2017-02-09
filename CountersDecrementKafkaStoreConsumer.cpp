@@ -60,8 +60,11 @@ void CountersDecrementKafkaStoreConsumer::processOne(int64_t offset, const infra
   if (nowMs() - msg.timestamp >= timeDelayMs_) {
     // this message is overdue, apply the count
     std::string key(reinterpret_cast<const char*>(record.key.data()), record.key.size());
-    key.append(1, keySuffix_);
-    buf->counts[key] -= record.by;
+    int64_t timespanFlags = record.flags || CountersTimespans::kDefaultTimespanFlags;
+    if (timespanFlags & timespanMask_) {
+      key.append(keySuffix_);
+      buf->counts[key] -= record.by;
+    }
     buf->nextProcessOffset = offset + 1;
   } else {
     // save the messaged for delayed processing
@@ -100,16 +103,5 @@ bool CountersDecrementKafkaStoreConsumer::delay(int64_t delayMs, int64_t timeMs)
   }
   return true;
 }
-
-const std::unordered_map<std::string, CountersDecrementKafkaStoreConsumer::Timespan>
-    CountersDecrementKafkaStoreConsumer::kTimespanMap =
-        []() -> std::unordered_map<std::string, CountersDecrementKafkaStoreConsumer::Timespan> {
-  return {
-      {"hour", {std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::hours(1)).count(), 'H'}},
-      {"day", {std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::hours(24)).count(), 'D'}},
-      {"week", {std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::hours(24 * 7)).count(), 'W'}},
-      {"month", {std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::hours(24 * 30)).count(), 'M'}},
-  };
-}();
 
 }  // namespace counters

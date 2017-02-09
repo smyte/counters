@@ -65,6 +65,7 @@ cc_library(
         "CountersIncrementKafkaConsumer.h",
     ],
     deps = [
+        ":counters_timespans",
         "//external:avro",
         "//external:boost",
         "//external:folly",
@@ -88,6 +89,7 @@ cc_library(
         "CountersDecrementKafkaStoreConsumer.h",
     ],
     deps = [
+        ":counters_timespans",
         "//external:boost",
         "//external:folly",
         "//external:glog",
@@ -98,4 +100,17 @@ cc_library(
     copts = [
         "-std=c++11",
     ],
+)
+
+cc_library(
+    name = "counters_timespans",
+    srcs = [
+        "CountersTimespans.cpp",
+    ],
+    hdrs = [
+        "CountersTimespans.h",
+    ],
+    copts = [
+        "-std=c++14",
+    ]
 )

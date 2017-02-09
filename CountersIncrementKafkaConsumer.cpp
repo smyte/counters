@@ -5,6 +5,7 @@
 
 #include "boost/endian/buffers.hpp"
 #include "counters/CounterRecord.hh"
+#include "counters/CountersTimespans.h"
 #include "folly/Format.h"
 #include "infra/AvroHelper.h"
 #include "rocksdb/write_batch.h"
@@ -23,8 +24,7 @@ void CountersIncrementKafkaConsumer::processBatch(int timeoutMs) {
     }
     CHECK(consumerHelper()->commitNextProcessOffset(offsetKey(), lastProcessedOffset_ + 1, &writeBatch));
     commitAsync();  // it's okay if commit failed, since the offset in kafkadb is the source of truth
-    DLOG(INFO) << "Batch processed " << count << " messages with "
-              << counts.size() / sizeof(kTimespanSuffixes) / sizeof(kTimespanSuffixes[0]) << " unique keys";
+    DLOG(INFO) << "Batch processed " << count << " messages with " << counts.size() << " keys";
   }
 }
 
@@ -33,14 +33,14 @@ void CountersIncrementKafkaConsumer::processOne(const RdKafka::Message& msg, voi
   Counter record;
   infra::AvroHelper::decode(msg.payload(), msg.len(), &record);
   std::string key(reinterpret_cast<const char*>(record.key.data()), record.key.size());
-  key.append(1, 'H');  // placeholder for suffix
-  for (char suffix : kTimespanSuffixes) {
-    key[record.key.size()] = suffix;
-    (*counts)[key] += record.by;
+  int64_t timespanFlags = record.flags || CountersTimespans::kDefaultTimespanFlags;
+  for (const auto& entry : CountersTimespans::kTimespanMap) {
+    const auto& timespan = entry.second;
+    if (timespanFlags & timespan.mask) {
+      (*counts)[key + timespan.keySuffix] += record.by;
+    }
   }
   lastProcessedOffset_ = msg.offset();
 }
-
-constexpr char CountersIncrementKafkaConsumer::kTimespanSuffixes[];
 
 }  // namespace counters

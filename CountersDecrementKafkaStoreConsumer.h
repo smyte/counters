@@ -5,9 +5,11 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "boost/algorithm/string/predicate.hpp"
+#include "counters/CountersTimespans.h"
 #include "infra/kafka/store/Consumer.h"
 #include "infra/kafka/store/KafkaStoreMessageRecord.hh"
 
@@ -28,10 +30,11 @@ class CountersDecrementKafkaStoreConsumer : public infra::kafka::store::Consumer
       : infra::kafka::store::Consumer(brokerList, objectStoreBucketName, objectStoreObjectNamePrefix, topic, partition,
                                       groupId, offsetKey, consumerHelper, gcs),
         mode_(mode) {
-    const auto it = kTimespanMap.find(mode);
-    CHECK(it != kTimespanMap.end()) << "Unknown mode: " << mode;
+    const auto it = CountersTimespans::kTimespanMap.find(mode);
+    CHECK(it != CountersTimespans::kTimespanMap.end()) << "Unknown mode: " << mode;
     timeDelayMs_ = it->second.timeDelayMs;
     keySuffix_ = it->second.keySuffix;
+    timespanMask_ = it->second.mask;
   }
 
   // Process a batch of messages and wait for the right time to decrement
@@ -41,12 +44,6 @@ class CountersDecrementKafkaStoreConsumer : public infra::kafka::store::Consumer
   void processOne(int64_t offset, const infra::kafka::store::KafkaStoreMessage& msg, void* opaque) override;
 
  private:
-  struct Timespan {
-    int64_t timeDelayMs;
-    char keySuffix;
-    Timespan(int64_t _timeDelayMs, char _keySuffix) : timeDelayMs(_timeDelayMs), keySuffix(_keySuffix) {}
-  };
-
   struct ProcessingBuf {
     // counts from processed messages
     std::unordered_map<std::string, int64_t> counts;
@@ -54,9 +51,6 @@ class CountersDecrementKafkaStoreConsumer : public infra::kafka::store::Consumer
     std::map<int64_t, infra::kafka::store::KafkaStoreMessage> msgBuf;
     int64_t nextProcessOffset;
   };
-
-  // Mode -> Timespan
-  static const std::unordered_map<std::string, Timespan> kTimespanMap;
 
   // Allow a margin of error in time delay in order to group more keys in a single transaction
   static constexpr int64_t kDelayMarginMs = 1000;
@@ -69,7 +63,8 @@ class CountersDecrementKafkaStoreConsumer : public infra::kafka::store::Consumer
 
   const std::string mode_;
   int64_t timeDelayMs_;
-  char keySuffix_;
+  std::string keySuffix_;
+  int64_t timespanMask_;
 };
 
 }  // namespace counters

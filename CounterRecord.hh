@@ -34,9 +34,11 @@ namespace counters {
 struct Counter {
     boost::array<uint8_t, 40> key;
     int64_t by;
+    int64_t flags;
     Counter() :
         key(boost::array<uint8_t, 40>()),
-        by(int64_t())
+        by(int64_t()),
+        flags(int64_t())
         { }
 };
 
@@ -46,6 +48,7 @@ template<> struct codec_traits<counters::Counter> {
     static void encode(Encoder& e, const counters::Counter& v) {
         avro::encode(e, v.key);
         avro::encode(e, v.by);
+        avro::encode(e, v.flags);
     }
     static void decode(Decoder& d, counters::Counter& v) {
         if (avro::ResolvingDecoder *rd =
@@ -60,6 +63,9 @@ template<> struct codec_traits<counters::Counter> {
                 case 1:
                     avro::decode(d, v.by);
                     break;
+                case 2:
+                    avro::decode(d, v.flags);
+                    break;
                 default:
                     break;
                 }
@@ -67,6 +73,11 @@ template<> struct codec_traits<counters::Counter> {
         } else {
             avro::decode(d, v.key);
             avro::decode(d, v.by);
+            // NOTE: this is hack to support newly added fields with default values.
+            // Shouldn't need this if the C++ avro decoder is full-featured.
+            try {
+                avro::decode(d, v.flags);
+            } catch (avro::Exception) {}
         }
     }
 };
