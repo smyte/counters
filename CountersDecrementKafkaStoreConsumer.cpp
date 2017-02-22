@@ -1,5 +1,6 @@
 #include "counters/CountersDecrementKafkaStoreConsumer.h"
 
+#include <algorithm>
 #include <chrono>
 #include <thread>
 #include <unordered_map>
@@ -94,7 +95,7 @@ bool CountersDecrementKafkaStoreConsumer::delay(int64_t delayMs, int64_t timeMs)
   DLOG(INFO) << "Sleeping for " << sleepTimeMs << "ms for delay in `" << mode_ << "` mode";
   while (sleepTimeMs > 0) {
     if (!run()) return false;
-    std::this_thread::sleep_for(std::chrono::milliseconds(sleepTimeMs));
+    std::this_thread::sleep_for(std::min(std::chrono::milliseconds(1000), std::chrono::milliseconds(sleepTimeMs)));
     sleepTimeMs = waitUntilMs - nowMs();
   }
   return true;
