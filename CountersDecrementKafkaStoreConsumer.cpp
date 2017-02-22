@@ -60,7 +60,7 @@ void CountersDecrementKafkaStoreConsumer::processOne(int64_t offset, const infra
   if (nowMs() - msg.timestamp >= timeDelayMs_) {
     // this message is overdue, apply the count
     std::string key(reinterpret_cast<const char*>(record.key.data()), record.key.size());
-    int64_t timespanFlags = record.flags || CountersTimespans::kDefaultTimespanFlags;
+    int64_t timespanFlags = record.flags ? record.flags : CountersTimespans::kDefaultTimespanFlags;
     if (timespanFlags & timespanMask_) {
       key.append(keySuffix_);
       buf->counts[key] -= record.by;

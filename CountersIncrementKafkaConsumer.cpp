@@ -33,7 +33,7 @@ void CountersIncrementKafkaConsumer::processOne(const RdKafka::Message& msg, voi
   Counter record;
   infra::AvroHelper::decode(msg.payload(), msg.len(), &record);
   std::string key(reinterpret_cast<const char*>(record.key.data()), record.key.size());
-  int64_t timespanFlags = record.flags || CountersTimespans::kDefaultTimespanFlags;
+  int64_t timespanFlags = record.flags ? record.flags : CountersTimespans::kDefaultTimespanFlags;
   for (const auto& entry : CountersTimespans::kTimespanMap) {
     const auto& timespan = entry.second;
     if (timespanFlags & timespan.mask) {
