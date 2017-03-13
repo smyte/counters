@@ -48,6 +48,8 @@ static pipeline::RedisPipelineBootstrap::Config config{
       },
   },
 
+  rocksDbConfigurator : nullptr,
+
   singletonRedisHandler : false,  // in order to support transactions
 };
 
