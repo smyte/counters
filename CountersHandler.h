@@ -9,7 +9,10 @@
 #include "counters/IncrbyMergeOperator.h"
 #include "counters/ZeroValueCompactionFilter.h"
 #include "pipeline/TransactionalRedisHandler.h"
+#include "rocksdb/cache.h"
+#include "rocksdb/filter_policy.h"
 #include "rocksdb/options.h"
+#include "rocksdb/table.h"
 #include "rocksdb/write_batch.h"
 
 namespace counters {
@@ -22,7 +25,13 @@ class CountersHandler : public pipeline::TransactionalRedisHandler {
   static void optimizeColumnFamily(int defaultBlockCacheSizeMb, rocksdb::ColumnFamilyOptions* options) {
     options->compaction_filter = new ZeroValueCompactionFilter();
     options->merge_operator.reset(new IncrbyMergeOperator());
-    options->OptimizeForPointLookup(defaultBlockCacheSizeMb);
+    // options->OptimizeForPointLookup(defaultBlockCacheSizeMb);
+    rocksdb::BlockBasedTableOptions block_based_options;
+    block_based_options.index_type = rocksdb::BlockBasedTableOptions::kBinarySearch;
+    block_based_options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10));
+    block_based_options.block_cache = rocksdb::NewLRUCache(static_cast<size_t>(defaultBlockCacheSizeMb * 1024 * 1024));
+    options->table_factory.reset(rocksdb::NewBlockBasedTableFactory(block_based_options));
+    options->memtable_prefix_bloom_size_ratio = 0.02;
   }
 
   const TransactionalCommandHandlerTable& getTransactionalCommandHandlerTable() const override {
