@@ -24,7 +24,6 @@ const std::unordered_map<std::string, CountersTimespans::Timespan> CountersTimes
 
 const int64_t CountersTimespans::kDefaultTimespanFlags =
     CountersTimespans::kTimespanMap.at("hour").mask | CountersTimespans::kTimespanMap.at("day").mask |
-    CountersTimespans::kTimespanMap.at("week").mask | CountersTimespans::kTimespanMap.at("month").mask |
-    CountersTimespans::kTimespanMap.at("total").mask;
+    CountersTimespans::kTimespanMap.at("week").mask | CountersTimespans::kTimespanMap.at("month").mask;
 
 }  // namespace counters
