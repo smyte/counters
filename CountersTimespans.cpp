@@ -18,7 +18,7 @@ const std::unordered_map<std::string, CountersTimespans::Timespan> CountersTimes
       {"2days", {std::chrono::duration_cast<milliseconds>(hours(24 * 2)).count(), "D2", 32L}},
       {"2weeks", {std::chrono::duration_cast<milliseconds>(hours(24 * 14)).count(), "W2", 64L}},
       {"8days", {std::chrono::duration_cast<milliseconds>(hours(24 * 8)).count(), "D8", 128L}},
-      {"6months", {std::chrono::duration_cast<milliseconds>(hours(24 * 8)).count(), "M6", 256L}},
+      {"6months", {std::chrono::duration_cast<milliseconds>(hours(24 * 180)).count(), "M6", 256L}},
   };
 }();
 
