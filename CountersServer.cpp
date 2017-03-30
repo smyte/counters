@@ -11,7 +11,7 @@ namespace counters {
 
 static pipeline::RedisPipelineBootstrap::Config config{
   redisHandlerFactory : [](pipeline::RedisPipelineBootstrap* bootstrap) -> std::shared_ptr<pipeline::RedisHandler> {
-    return std::make_shared<CountersHandler>(bootstrap->getDatabaseManager());
+    return std::make_shared<CountersHandler>(bootstrap->getDatabaseManager(), bootstrap->getKafkaConsumerHelper());
   },
 
   kafkaConsumerFactoryMap :

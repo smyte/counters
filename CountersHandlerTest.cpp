@@ -22,7 +22,7 @@ class CountersHandlerTest : public stesting::TestWithRocksDb {
 class MockCountersHandler : public CountersHandler {
  public:
   explicit MockCountersHandler(std::shared_ptr<pipeline::DatabaseManager> databaseManager)
-      : CountersHandler(databaseManager) {}
+      : CountersHandler(databaseManager, nullptr) {}
 
   MOCK_METHOD2(write, folly::Future<folly::Unit>(Context*, codec::RedisValue));
 };

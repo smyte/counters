@@ -19,8 +19,9 @@ namespace counters {
 
 class CountersHandler : public pipeline::TransactionalRedisHandler {
  public:
-  explicit CountersHandler(std::shared_ptr<pipeline::DatabaseManager> databaseManager)
-      : TransactionalRedisHandler(databaseManager) {}
+  CountersHandler(std::shared_ptr<pipeline::DatabaseManager> databaseManager,
+                  std::shared_ptr<infra::kafka::ConsumerHelper> consumerHelper)
+      : TransactionalRedisHandler(databaseManager, consumerHelper) {}
 
   static void optimizeColumnFamily(int defaultBlockCacheSizeMb, rocksdb::ColumnFamilyOptions* options) {
     options->compaction_filter = new ZeroValueCompactionFilter();
