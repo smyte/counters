@@ -73,8 +73,6 @@ void CountersDecrementKafkaStoreConsumer::processOne(int64_t offset, const infra
 }
 
 void CountersDecrementKafkaStoreConsumer::commitCounts(const CountersDecrementKafkaStoreConsumer::ProcessingBuf& buf) {
-  if (buf.counts.empty()) return;
-
   rocksdb::WriteBatch writeBatch;
   for (const auto& entry : buf.counts) {
     boost::endian::big_int64_buf_t value(entry.second);
