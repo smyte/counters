@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 
-#include "codec/RedisValue.h"
+#include "codec/RedisMessage.h"
 #include "counters/CountersHandler.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -17,6 +17,11 @@ class CountersHandlerTest : public stesting::TestWithRocksDb {
  protected:
   CountersHandlerTest()
     : stesting::TestWithRocksDb({}, {{"default", CountersHandler::optimizeColumnFamily}}) {}
+
+  // Counters does not support async command handling, so use default key
+  codec::RedisMessage getRedisMessage(codec::RedisValue&& val) {
+    return codec::RedisMessage(std::move(val));
+  }
 };
 
 class MockCountersHandler : public CountersHandler {
@@ -24,7 +29,12 @@ class MockCountersHandler : public CountersHandler {
   explicit MockCountersHandler(std::shared_ptr<pipeline::DatabaseManager> databaseManager)
       : CountersHandler(databaseManager, nullptr) {}
 
-  MOCK_METHOD2(write, folly::Future<folly::Unit>(Context*, codec::RedisValue));
+  MOCK_METHOD2(write, folly::Future<folly::Unit>(Context*, codec::RedisMessage));
+
+  // Counters does not support async command handling, so use default key
+  bool handleCommand(const std::string& cmdNameLower, const std::vector<std::string>& cmd, Context* ctx) {
+    return CountersHandler::handleCommand(0L, cmdNameLower, cmd, ctx);
+  }
 };
 
 TEST_F(CountersHandlerTest, EnsureCommand) {
@@ -35,23 +45,28 @@ TEST_F(CountersHandlerTest, EnsureCommand) {
   db()->Put(rocksdb::WriteOptions(), "key1", rocksdb::Slice(value1.data(), sizeof(int64_t)));
 
   // same value
-  EXPECT_CALL(handler, write(nullptr, codec::RedisValue(codec::RedisValue::Type::kSimpleString, "OK")))
+  EXPECT_CALL(handler,
+              write(nullptr, getRedisMessage(codec::RedisValue(codec::RedisValue::Type::kSimpleString, "OK"))))
       .Times(1);
   EXPECT_TRUE(handler.handleCommand("ensure", { "ensure", "key1", "10" }, nullptr));
 
   // different values
-  EXPECT_CALL(handler, write(nullptr, codec::RedisValue(codec::RedisValue::Type::kError, "ENSURE value different")))
+  EXPECT_CALL(
+      handler,
+      write(nullptr, getRedisMessage(codec::RedisValue(codec::RedisValue::Type::kError, "ENSURE value different"))))
       .Times(1);
   EXPECT_TRUE(handler.handleCommand("ensure", { "ensure", "key1", "5" }, nullptr));
 
   // key not found
-  EXPECT_CALL(handler, write(nullptr, codec::RedisValue(codec::RedisValue::Type::kError, "ENSURE key not found")))
+  EXPECT_CALL(
+      handler,
+      write(nullptr, getRedisMessage(codec::RedisValue(codec::RedisValue::Type::kError, "ENSURE key not found"))))
       .Times(1);
   EXPECT_TRUE(handler.handleCommand("ensure", { "ensure", "key2", "5" }, nullptr));
 
   // value not a valid integer
-  EXPECT_CALL(handler, write(nullptr, codec::RedisValue(codec::RedisValue::Type::kError,
-                                                        "Value is not an integer or out of range")))
+  EXPECT_CALL(handler, write(nullptr, getRedisMessage(codec::RedisValue(codec::RedisValue::Type::kError,
+                                                                        "Value is not an integer or out of range"))))
       .Times(1);
   EXPECT_TRUE(handler.handleCommand("ensure", { "ensure", "key2", "a" }, nullptr));
 }
@@ -64,13 +79,11 @@ TEST_F(CountersHandlerTest, GetCommand) {
   db()->Put(rocksdb::WriteOptions(), "key1", rocksdb::Slice(value1.data(), sizeof(int64_t)));
 
   // key exists
-  EXPECT_CALL(handler, write(nullptr, codec::RedisValue(10)))
-      .Times(1);
+  EXPECT_CALL(handler, write(nullptr, getRedisMessage(codec::RedisValue(10)))).Times(1);
   EXPECT_TRUE(handler.handleCommand("get", { "get", "key1" }, nullptr));
 
   // key does not exist
-  EXPECT_CALL(handler, write(nullptr, codec::RedisValue::nullString()))
-      .Times(1);
+  EXPECT_CALL(handler, write(nullptr, getRedisMessage(codec::RedisValue::nullString()))).Times(1);
   EXPECT_TRUE(handler.handleCommand("get", { "get", "key2" }, nullptr));
 }
 
@@ -82,19 +95,17 @@ TEST_F(CountersHandlerTest, IncrbyCommand) {
   db()->Put(rocksdb::WriteOptions(), "key1", rocksdb::Slice(value1.data(), sizeof(int64_t)));
 
   // value not a valid integer
-  EXPECT_CALL(handler, write(nullptr, codec::RedisValue(codec::RedisValue::Type::kError,
-                                                        "Value is not an integer or out of range")))
+  EXPECT_CALL(handler, write(nullptr, getRedisMessage(codec::RedisValue(codec::RedisValue::Type::kError,
+                                                                        "Value is not an integer or out of range"))))
       .Times(1);
   EXPECT_TRUE(handler.handleCommand("incrby", { "incrby", "key1", "a" }, nullptr));
 
   // key exists
-  EXPECT_CALL(handler, write(nullptr, codec::RedisValue(15)))
-      .Times(1);
+  EXPECT_CALL(handler, write(nullptr, getRedisMessage(codec::RedisValue(15)))).Times(1);
   EXPECT_TRUE(handler.handleCommand("incrby", { "incrby", "key1", "5" }, nullptr));
 
   // key does not exist
-  EXPECT_CALL(handler, write(nullptr, codec::RedisValue(-5)))
-      .Times(1);
+  EXPECT_CALL(handler, write(nullptr, getRedisMessage(codec::RedisValue(-5)))).Times(1);
   EXPECT_TRUE(handler.handleCommand("incrby", { "incrby", "key2", "-5" }, nullptr));
 }
 
@@ -102,13 +113,14 @@ TEST_F(CountersHandlerTest, SetCommand) {
   MockCountersHandler handler(databaseManager());
 
   // value not a valid integer
-  EXPECT_CALL(handler, write(nullptr, codec::RedisValue(codec::RedisValue::Type::kError,
-                                                        "Value is not an integer or out of range")))
+  EXPECT_CALL(handler, write(nullptr, getRedisMessage(codec::RedisValue(codec::RedisValue::Type::kError,
+                                                                        "Value is not an integer or out of range"))))
       .Times(1);
   EXPECT_TRUE(handler.handleCommand("set", { "set", "key1", "a" }, nullptr));
 
   // valid integer
-  EXPECT_CALL(handler, write(nullptr, codec::RedisValue(codec::RedisValue::Type::kSimpleString, "OK")))
+  EXPECT_CALL(handler,
+              write(nullptr, getRedisMessage(codec::RedisValue(codec::RedisValue::Type::kSimpleString, "OK"))))
       .Times(1);
   EXPECT_TRUE(handler.handleCommand("set", { "set", "key1", "10" }, nullptr));
   std::string newValue1;
