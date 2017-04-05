@@ -49,7 +49,7 @@ class CountersDecrementKafkaStoreConsumer : public infra::kafka::store::Consumer
     std::unordered_map<std::string, int64_t> counts;
     // buffer for messages to be processed after a delay, keyed by kafka offset
     std::map<int64_t, infra::kafka::store::KafkaStoreMessage> msgBuf;
-    int64_t nextProcessOffset;
+    int64_t nextProcessOffset = -1;
   };
 
   // Allow a margin of error in time delay in order to group more keys in a single transaction
