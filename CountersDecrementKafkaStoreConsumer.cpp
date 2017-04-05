@@ -73,14 +73,19 @@ void CountersDecrementKafkaStoreConsumer::processOne(int64_t offset, const infra
 }
 
 void CountersDecrementKafkaStoreConsumer::commitCounts(const CountersDecrementKafkaStoreConsumer::ProcessingBuf& buf) {
+  if (buf.counts.empty() && buf.msgBuf.empty()) {
+    // The entire batch is empty
+    return;
+  }
+
+  int64_t nextOffset = buf.nextProcessOffset >= 0 ? buf.nextProcessOffset : buf.msgBuf.begin()->first;
   rocksdb::WriteBatch writeBatch;
   for (const auto& entry : buf.counts) {
     boost::endian::big_int64_buf_t value(entry.second);
     writeBatch.Merge(entry.first, rocksdb::Slice(value.data(), sizeof(int64_t)));
   }
   int64_t fileOffset = buf.nextProcessOffset < nextFileOffset() ? currentFileOffset() : nextFileOffset();
-  CHECK(consumerHelper()->commitNextProcessKafkaAndFileOffsets(offsetKey(), buf.nextProcessOffset, fileOffset,
-                                                              &writeBatch));
+  CHECK(consumerHelper()->commitNextProcessKafkaAndFileOffsets(offsetKey(), nextOffset, fileOffset, &writeBatch));
   // Also commit to kafka brokers only for metrics and reporting, so failure is okay
   if (!commitAsync()) {
     LOG(WARNING) << "Committing offset to kafka brokers failed";
