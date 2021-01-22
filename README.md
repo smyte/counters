@@ -1,5 +1,7 @@
 # counters
 
+**No longer maintained:** Please note that this code is no longer being actively maintained.
+
 A counts database written in C++ that speaks Redis protocol and replicates via Kafka.
 
 ## Building from source
